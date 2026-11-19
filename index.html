@@ -1,0 +1,1376 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101b36">
+<title>KMD 星穹纪元：失落的七界</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:#101b36;color:#fff;font-family:Arial,"Microsoft YaHei",sans-serif}
+#game{position:fixed;inset:0}
+canvas{display:block}
+button{cursor:pointer;font-family:inherit}
+.hidden{display:none!important}
+
+#brand{
+ position:fixed;top:18px;left:20px;z-index:10;
+ color:#a9eaff;font-size:20px;font-weight:bold;
+ text-shadow:0 0 15px #39a9ff;pointer-events:none
+}
+#brand small{display:block;font-size:9px;letter-spacing:3px;color:#d0e6ff;margin-top:3px}
+
+.panel{
+ background:rgba(8,22,45,.82);
+ border:1px solid rgba(120,210,255,.4);
+ border-radius:12px;
+ box-shadow:0 0 20px rgba(20,140,255,.12);
+ backdrop-filter:blur(8px)
+}
+
+#status{
+ position:fixed;left:20px;top:82px;width:230px;
+ padding:14px;z-index:10
+}
+.status-title{font-size:12px;color:#9bdfff;margin-bottom:7px}
+.bar{height:9px;background:#29374d;border-radius:10px;overflow:hidden;margin:5px 0 10px}
+.bar-fill{height:100%;width:100%;transition:width .2s}
+#hpbar{background:linear-gradient(90deg,#d83e65,#ff8c9d)}
+#manabar{background:linear-gradient(90deg,#368de8,#70e5ff)}
+#expbar{background:linear-gradient(90deg,#d2a83e,#fff08c)}
+.stats-line{display:flex;justify-content:space-between;font-size:12px;color:#d6eaff}
+
+#quest{
+ position:fixed;right:20px;top:82px;width:245px;
+ padding:15px;z-index:10
+}
+#questtitle{font-size:14px;color:#ffdb8b;font-weight:bold;margin-bottom:8px}
+#questtext{font-size:12px;line-height:1.8;color:#d7e9ff}
+
+#hint{
+ position:fixed;left:50%;bottom:125px;transform:translateX(-50%);
+ z-index:30;padding:10px 22px;border-radius:10px;
+ background:rgba(5,18,38,.88);border:1px solid #65cfff;
+ color:#e9faff;font-size:13px;text-align:center;
+ pointer-events:none;white-space:normal;max-width:90vw
+}
+
+#controls{
+ position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+ display:flex;gap:9px;z-index:20
+}
+.action{
+ min-width:65px;height:58px;padding:0 12px;
+ border:1px solid rgba(130,220,255,.6);
+ border-radius:13px;background:rgba(15,40,70,.85);
+ color:white;font-size:12px;font-weight:bold;
+ box-shadow:0 0 15px rgba(40,160,255,.12)
+}
+.action:active{background:#287eaf;transform:scale(.95)}
+.action.primary{background:rgba(39,111,173,.9)}
+
+#start,#dialog,#menu,#panel{
+ position:fixed;inset:0;z-index:50;
+ display:flex;align-items:center;justify-content:center;
+ background:rgba(4,12,30,.82);backdrop-filter:blur(9px);
+ padding:18px
+}
+.window{
+ width:min(520px,94vw);padding:30px;
+ border:1px solid rgba(116,213,255,.55);
+ border-radius:20px;background:linear-gradient(145deg,#172e50,#101a35);
+ box-shadow:0 0 50px rgba(40,150,255,.2);text-align:center
+}
+.window h1{color:#9ce7ff;font-size:30px;margin:0 0 10px}
+.window h2{color:#9ce7ff;margin-top:0}
+.window p{font-size:13px;line-height:1.9;color:#c7ddf2}
+.main-btn{
+ border:0;border-radius:10px;padding:13px 30px;
+ background:linear-gradient(90deg,#4b9fce,#74dcf3);
+ color:#102a45;font-size:15px;font-weight:bold;margin:7px
+}
+.secondary-btn{
+ border:1px solid #6da9d1;border-radius:9px;
+ background:#233e61;color:white;padding:10px 17px;margin:5px
+}
+#dialogtext{line-height:1.9;color:#dcecff;font-size:14px}
+#panelcontent{max-height:55vh;overflow:auto;text-align:left}
+.item{
+ padding:12px;margin:8px 0;border:1px solid #45617f;
+ border-radius:10px;background:rgba(255,255,255,.04);
+ display:flex;align-items:center;justify-content:space-between;gap:10px
+}
+.item small{display:block;color:#a9c9e4;margin-top:5px}
+#minimap{
+ position:fixed;right:20px;top:350px;width:150px;height:150px;
+ border:2px solid #82d9ff;border-radius:50%;
+ background:rgba(4,18,37,.8);z-index:10
+}
+#area{
+ position:fixed;right:20px;top:510px;width:150px;
+ text-align:center;color:#a9eaff;font-size:12px;z-index:10
+}
+#enemybar{
+ position:fixed;top:25%;left:50%;transform:translateX(-50%);
+ z-index:15;text-align:center;display:none;
+ background:rgba(15,20,42,.8);padding:10px 20px;border-radius:10px;
+ color:#fff;font-size:12px
+}
+#enemyfill{height:7px;width:100%;background:#e6538c}
+#enemytrack{width:190px;background:#45334a;margin-top:7px;height:7px;border-radius:8px;overflow:hidden}
+
+#mobilepad{
+ display:none;position:fixed;bottom:95px;left:15px;z-index:25;
+ grid-template-columns:repeat(3,48px);gap:4px
+}
+#mobilepad button{
+ height:45px;border:1px solid #8bdfff;border-radius:10px;
+ background:rgba(14,39,68,.8);color:white;touch-action:none
+}
+@media(max-width:800px){
+ #status{top:60px;left:8px;width:175px;padding:10px}
+ #quest{top:60px;right:8px;width:165px;padding:10px}
+ #minimap{width:105px;height:105px;right:8px;top:245px}
+ #area{right:8px;top:355px;width:105px;font-size:10px}
+ #brand{top:10px;left:10px;font-size:16px}
+ #controls{bottom:12px;gap:5px}
+ .action{min-width:52px;height:49px;padding:0 7px;font-size:11px}
+ #hint{bottom:72px;font-size:11px}
+ #mobilepad{display:grid}
+}
+</style>
+</head>
+
+<body>
+<div id="game"></div>
+
+<div id="brand">
+ KMD 卡米达
+ <small>STAR REALM · LOST SEVEN WORLDS</small>
+</div>
+
+<div id="status" class="panel">
+ <div class="status-title">冒险者状态</div>
+ <div class="stats-line"><span>生命值</span><span id="hp">100/100</span></div>
+ <div class="bar"><div id="hpbar" class="bar-fill"></div></div>
+ <div class="stats-line"><span>星能值</span><span id="mana">100/100</span></div>
+ <div class="bar"><div id="manabar" class="bar-fill"></div></div>
+ <div class="stats-line"><span>经验值</span><span id="exp">0/100</span></div>
+ <div class="bar"><div id="expbar" class="bar-fill"></div></div>
+ <div class="stats-line">
+  <span>等级 <b id="level">1</b></span>
+  <span>星币 <b id="gold">0</b></span>
+ </div>
+</div>
+
+<div id="quest" class="panel">
+ <div id="questtitle">第一章：陌生的世界</div>
+ <div id="questtext">寻找村庄中的艾琳，与她交谈。</div>
+</div>
+
+<canvas id="minimap" width="300" height="300"></canvas>
+<div id="area">星落平原</div>
+
+<div id="enemybar">
+ <div id="enemyname">星蚀史莱姆</div>
+ <div id="enemytrack"><div id="enemyfill"></div></div>
+</div>
+
+<div id="hint" class="hidden">欢迎来到星落平原</div>
+
+<div id="mobilepad">
+ <button data-key="KeyW">↑</button>
+ <button disabled>◇</button>
+ <button data-key="KeyD">→</button>
+ <button data-key="KeyA">←</button>
+ <button data-key="KeyS">↓</button>
+ <button data-key="ShiftLeft">冲</button>
+</div>
+
+<div id="controls">
+ <button class="action" id="interact">交互 E</button>
+ <button class="action" id="jump">跳跃</button>
+ <button class="action primary" id="attack">攻击 F</button>
+ <button class="action primary" id="skill">星火 Q</button>
+ <button class="action" id="bag">背包 I</button>
+</div>
+
+<div id="start">
+ <div class="window">
+  <h1>星穹纪元</h1>
+  <div style="letter-spacing:5px;color:#8ddfff;font-size:12px">失 落 的 七 界</div>
+  <p>
+   七界的星辰正在逐渐熄灭。<br>
+   古老遗迹重新苏醒，命运的旅程即将开始。<br>
+   你将成为改变世界的冒险者。
+  </p>
+  <button class="main-btn" id="startbutton">开始冒险</button>
+  <button class="secondary-btn" id="continuebutton">读取存档</button>
+  <p style="font-size:11px;color:#8daecb">
+   WASD移动 · 鼠标右键拖动视角 · 空格跳跃<br>
+   F攻击 · Q技能 · E交互 · Shift冲刺 · ESC暂停
+  </p>
+ </div>
+</div>
+
+<div id="dialog" class="hidden">
+ <div class="window">
+  <h2 id="dialogtitle">角色对话</h2>
+  <div id="dialogtext"></div>
+  <button class="main-btn" id="dialogclose">继续</button>
+ </div>
+</div>
+
+<div id="menu" class="hidden">
+ <div class="window">
+  <h2>冒险暂停</h2>
+  <button class="main-btn" id="resume">继续游戏</button><br>
+  <button class="secondary-btn" id="save">保存进度</button>
+  <button class="secondary-btn" id="load">读取存档</button><br>
+  <button class="secondary-btn" id="character">角色属性</button>
+  <button class="secondary-btn" id="inventory">背包</button><br>
+  <button class="secondary-btn" id="returntitle">返回标题</button>
+ </div>
+</div>
+
+<div id="panel" class="hidden">
+ <div class="window">
+  <h2 id="paneltitle">冒险者背包</h2>
+  <div id="panelcontent"></div>
+  <button class="secondary-btn" id="panelclose">关闭</button>
+ </div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+
+/* =================================================
+   1. 场景与渲染
+================================================= */
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9bc9ed);
+scene.fog = new THREE.Fog(0x9bc9ed, 45, 150);
+
+const camera = new THREE.PerspectiveCamera(
+  65, innerWidth/innerHeight, 0.1, 300
+);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias:true,
+  powerPreference:"high-performance"
+});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.getElementById("game").appendChild(renderer.domElement);
+
+const ambient = new THREE.HemisphereLight(0xd8edff,0x536044,2);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(0xffedcc,2.8);
+sun.position.set(-30,50,20);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+scene.add(sun);
+
+/* =================================================
+   2. 材质与地图
+================================================= */
+
+const material = (color,roughness=.8,metalness=0) =>
+ new THREE.MeshStandardMaterial({color,roughness,metalness});
+
+const grassMat = material(0x65965c);
+const stoneMat = material(0x818c9b);
+const woodMat = material(0x805533);
+const goldMat = material(0xe8bb55,.35,.5);
+
+function mesh(geo,mat,x,y,z,parent=scene){
+ const o = new THREE.Mesh(geo,mat);
+ o.position.set(x,y,z);
+ o.castShadow = true;
+ o.receiveShadow = true;
+ parent.add(o);
+ return o;
+}
+
+function box(x,y,z,sx,sy,sz,mat,parent=scene){
+ return mesh(new THREE.BoxGeometry(sx,sy,sz),mat,x,y,z,parent);
+}
+
+const ground = mesh(
+ new THREE.PlaneGeometry(180,180),
+ grassMat,0,0,0
+);
+ground.rotation.x=-Math.PI/2;
+
+for(let i=0;i<24;i++){
+ const h=12+Math.random()*20;
+ const mountain=mesh(
+  new THREE.ConeGeometry(9+Math.random()*8,h,5),
+  material(0x788fa2),
+  -100+i*9,h/2-1,-85-Math.random()*15
+ );
+ mountain.rotation.y=Math.random()*Math.PI;
+}
+
+function tree(x,z,s=1){
+ const group=new THREE.Group();
+ group.position.set(x,0,z);
+ group.scale.setScalar(s);
+ mesh(new THREE.CylinderGeometry(.25,.4,2.4,7),woodMat,0,1.2,0,group);
+ mesh(new THREE.ConeGeometry(1.5,3.2,8),material(0x30784c),0,3.2,0,group);
+ mesh(new THREE.ConeGeometry(1.15,2.5,8),material(0x49945c),0,4.4,0,group);
+ scene.add(group);
+}
+
+for(let i=0;i<85;i++){
+ const x=(Math.random()-.5)*145;
+ const z=(Math.random()-.5)*145;
+ if(Math.abs(x)<14&&Math.abs(z)<16)continue;
+ if(Math.abs(x-18)<11)continue;
+ tree(x,z,.7+Math.random()*.8);
+}
+
+// 河流与桥
+const river=mesh(
+ new THREE.PlaneGeometry(14,100),
+ new THREE.MeshStandardMaterial({
+  color:0x48acd5,roughness:.2,metalness:.2
+ }),
+ 18,.03,-5
+);
+river.rotation.x=-Math.PI/2;
+river.rotation.z=-.2;
+
+for(let i=0;i<9;i++){
+ box(18,.35,-12+i*1.5,5,.35,1.35,woodMat);
+}
+
+// 村庄房屋
+function house(x,z,s=1){
+ const g=new THREE.Group();
+ g.position.set(x,0,z);
+ g.scale.setScalar(s);
+ mesh(new THREE.BoxGeometry(7,4,6),material(0xe2d4ba),0,2,0,g);
+ const roof=mesh(new THREE.ConeGeometry(5.2,3.2,4),material(0x8c5262),0,5.2,0,g);
+ roof.rotation.y=Math.PI/4;
+ mesh(new THREE.BoxGeometry(1.4,2.4,.2),woodMat,0,1.2,3.08,g);
+ scene.add(g);
+}
+house(-15,2,.85);
+house(-23,-5,.75);
+house(-15,13,.7);
+
+// 遗迹
+box(0,.3,-37,15,.6,13,stoneMat);
+for(let i=0;i<4;i++){
+ box(i<2?-6:6,3,i%2?-42:-32,1.3,6,1.3,stoneMat);
+}
+box(0,6.2,-37,14,.8,1.5,stoneMat);
+
+// 石碑
+const monument=new THREE.Group();
+monument.position.set(0,0,-37);
+mesh(new THREE.BoxGeometry(2.5,4.5,.8),material(0x536c8c,.35,.5),0,2.4,0,monument);
+const rune=mesh(
+ new THREE.OctahedronGeometry(.85),
+ new THREE.MeshStandardMaterial({
+  color:0x55dfff,emissive:0x1689ff,emissiveIntensity:2
+ }),
+ 0,2.8,.55,monument
+);
+scene.add(monument);
+
+/* =================================================
+   3. 角色模型
+================================================= */
+
+function character(color,hairColor=0x29243d){
+ const g=new THREE.Group();
+
+ mesh(new THREE.CapsuleGeometry(.48,.9,5,10),material(color),0,1.35,0,g);
+ mesh(new THREE.SphereGeometry(.38,16,12),material(0xffd7bd),0,2.35,0,g);
+
+ mesh(
+  new THREE.SphereGeometry(.4,14,10,0,Math.PI*2,0,Math.PI*.65),
+  material(hairColor),0,2.48,-.03,g
+ );
+
+ for(const side of [-1,1]){
+  mesh(new THREE.SphereGeometry(.045,8,8),material(0x263e68),side*.14,2.36,.34,g);
+  mesh(new THREE.CapsuleGeometry(.17,.65,4,8),material(0x303b5d),side*.23,.48,0,g);
+ }
+
+ mesh(new THREE.BoxGeometry(.9,1.2,.12),material(0x594c9b),0,1.35,-.36,g);
+ return g;
+}
+
+const player=character(0x397acb);
+player.position.set(0,0,8);
+scene.add(player);
+
+const sword=mesh(
+ new THREE.BoxGeometry(.12,1.5,.18),
+ material(0x9beaff,.25,.7),
+ .62,1.45,0,player
+);
+
+const npc=character(0xe8d6a0,0xc78acb);
+npc.position.set(-5,0,4);
+scene.add(npc);
+
+const npcMarker=mesh(
+ new THREE.OctahedronGeometry(.22),
+ new THREE.MeshStandardMaterial({
+  color:0xffd45d,emissive:0xffa500,emissiveIntensity:1.6
+ }),
+ -5,3.4,4
+);
+
+/* =================================================
+   4. 怪物
+================================================= */
+
+const enemies=[];
+
+function createSlime(x,z,level=1){
+ const g=new THREE.Group();
+
+ const slimeMat=new THREE.MeshStandardMaterial({
+  color:0x8b57d9,roughness:.3,transparent:true,opacity:.92,
+  emissive:0x35145e,emissiveIntensity:.8
+ });
+
+ const body=mesh(new THREE.SphereGeometry(.85,18,14),slimeMat,0,.8,0,g);
+ body.scale.set(1.1,.85,1);
+
+ for(const side of [-1,1]){
+  mesh(new THREE.SphereGeometry(.12,10,8),material(0xffffff),side*.27,.95,.69,g);
+  mesh(new THREE.SphereGeometry(.055,8,8),material(0x211c3c),side*.27,.95,.79,g);
+ }
+
+ g.position.set(x,0,z);
+ g.userData={
+  type:"enemy",name:"星蚀史莱姆",
+  hp:3+level,maxHp:3+level,level,
+  alive:true,cooldown:0
+ };
+ scene.add(g);
+ enemies.push(g);
+ return g;
+}
+
+createSlime(-12,-18,1);
+createSlime(10,-22,1);
+createSlime(-18,-43,2);
+createSlime(13,-45,2);
+createSlime(28,5,1);
+createSlime(-30,12,1);
+
+/* =================================================
+   5. 宝箱
+================================================= */
+
+const chests=[];
+
+function createChest(x,z){
+ const g=new THREE.Group();
+ box(0,.55,0,1.5,.85,1,woodMat,g);
+ box(0,.9,0,1.58,.12,1.08,goldMat,g);
+ box(0,.55,.55,.25,.32,.12,goldMat,g);
+ g.position.set(x,0,z);
+ g.userData={type:"chest",opened:false,reward:30};
+ scene.add(g);
+ chests.push(g);
+}
+createChest(-10,12);
+createChest(25,-25);
+createChest(-25,-48);
+createChest(36,20);
+
+/* =================================================
+   6. 游戏数据
+================================================= */
+
+const state={
+ started:false,paused:false,dialog:false,
+ hp:100,maxHp:100,mana:100,maxMana:100,
+ level:1,exp:0,gold:0,
+ defeated:0,openedChests:0,
+ questStep:0,questCompleted:false,
+ attackCD:0,skillCD:0,
+ jumpVelocity:0,onGround:true,
+ sprint:false,moving:false
+};
+
+const inventory=[
+ {id:"potion",name:"星辉药剂",count:3,desc:"恢复30点生命值"},
+ {id:"crystal",name:"星尘结晶",count:5,desc:"蕴含星之力量的结晶"},
+ {id:"herb",name:"月光草",count:2,desc:"散发光芒的草药"}
+];
+
+let worldTime=8;
+let yaw=0,pitch=.25;
+let rightMouse=false;
+const keys={};
+
+const $=id=>document.getElementById(id);
+
+function hint(text){
+ $("hint").textContent=text;
+ $("hint").classList.remove("hidden");
+ clearTimeout(hint.timer);
+ hint.timer=setTimeout(()=>$("hint").classList.add("hidden"),2300);
+}
+
+function updateHUD(){
+ $("hp").textContent=Math.ceil(state.hp)+"/"+state.maxHp;
+ $("mana").textContent=Math.ceil(state.mana)+"/"+state.maxMana;
+ $("level").textContent=state.level;
+ $("gold").textContent=state.gold;
+ $("exp").textContent=state.exp+"/100";
+
+ $("hpbar").style.width=state.hp/state.maxHp*100+"%";
+ $("manabar").style.width=state.mana/state.maxMana*100+"%";
+ $("expbar").style.width=state.exp+"%";
+}
+
+function updateQuest(){
+ const quests=[
+  ["第一章：陌生的世界","寻找村庄中的艾琳，与她交谈。"],
+  ["第二章：遗迹的呼唤","前往北方遗迹，调查星之石碑。"],
+  ["第三章：星蚀危机",`击败星蚀史莱姆：${Math.min(state.defeated,2)}/2`],
+  ["第四章：归还星之力量","返回村庄，与艾琳交谈。"],
+  ["主线完成：星穹启程","你已经完成星落平原的初始冒险！"]
+ ];
+ const q=quests[Math.min(state.questStep,4)];
+ $("questtitle").textContent=q[0];
+ $("questtext").textContent=q[1];
+}
+
+/* =================================================
+   7. 对话系统
+================================================= */
+
+function dialog(title,text,callback){
+ state.dialog=true;
+ $("dialogtitle").textContent=title;
+ $("dialogtext").textContent=text;
+ $("dialog").classList.remove("hidden");
+
+ $("dialogclose").onclick=()=>{
+  $("dialog").classList.add("hidden");
+  state.dialog=false;
+  if(callback)callback();
+ };
+}
+
+function interactNPC(){
+ if(state.questStep===0){
+  dialog("艾琳","欢迎来到星落平原，旅行者！北方遗迹出现了异常星光，请你前往调查。",()=>{
+   state.questStep=1;
+   updateQuest();
+   hint("接受任务：前往北方遗迹。");
+  });
+ }else if(state.questStep===1){
+  dialog("艾琳","遗迹就在北方，请调查那座古老的石碑。");
+ }else if(state.questStep===2){
+  dialog("艾琳","石碑的力量正在减弱，请击败至少两只星蚀史莱姆！");
+ }else if(state.questStep===3){
+  dialog("艾琳","你成功了！请收下这份奖励。",()=>{
+   state.questStep=4;
+   state.questCompleted=true;
+   state.gold+=100;
+   state.exp+=50;
+   updateQuest();
+   updateHUD();
+   hint("主线任务完成！获得100星币。");
+  });
+ }else{
+  dialog("艾琳","星穹的旅程才刚刚开始，七界的秘密等待你去探索。");
+ }
+}
+
+function interactMonument(){
+ if(state.questStep===0){
+  dialog("星之石碑","古老符文闪烁微光。也许你应该先寻找村庄中的线索。");
+ }else if(state.questStep===1){
+  dialog("星之石碑","你触碰石碑，古老的星之力量回应了你。远处传来怪物的嘶鸣！",()=>{
+   state.questStep=2;
+   updateQuest();
+   hint("任务更新：击败两只星蚀史莱姆。");
+  });
+ }else{
+  dialog("星之石碑","蓝色符文已经恢复光芒。它似乎正在指引你前往更远的地方。");
+ }
+}
+
+/* =================================================
+   8. 交互检测
+================================================= */
+
+function nearestInteractable(){
+ let target=null;
+ let shortest=3.5;
+
+ const list=[npc,monument,...chests];
+
+ for(const obj of list){
+  if(obj.userData.opened)continue;
+  const d=player.position.distanceTo(obj.position);
+  if(d<shortest){shortest=d;target=obj;}
+ }
+ return target;
+}
+
+function interact(){
+ if(!state.started||state.dialog)return;
+
+ const target=nearestInteractable();
+
+ if(!target){
+  hint("附近没有可以交互的目标。");
+  return;
+ }
+
+ if(target===npc){interactNPC();return;}
+ if(target===monument){interactMonument();return;}
+
+ if(target.userData.type==="chest"){
+  target.userData.opened=true;
+  state.gold+=target.userData.reward;
+  state.openedChests++;
+  updateHUD();
+  dialog("发现宝箱","获得"+target.userData.reward+"枚星币！");
+ }
+}
+
+/* =================================================
+   9. 战斗
+================================================= */
+
+function nearestEnemy(max=4.5){
+ let target=null,shortest=max;
+ for(const e of enemies){
+  if(!e.userData.alive)continue;
+  const d=player.position.distanceTo(e.position);
+  if(d<shortest){shortest=d;target=e;}
+ }
+ return target;
+}
+
+function damageEnemy(enemy,damage){
+ if(!enemy||!enemy.userData.alive)return;
+
+ enemy.userData.hp-=damage;
+ enemy.scale.set(1.15,.9,1.15);
+ setTimeout(()=>enemy.scale.set(1,1,1),100);
+
+ if(enemy.userData.hp<=0){
+  enemy.userData.alive=false;
+  scene.remove(enemy);
+  state.defeated++;
+  state.exp+=30;
+  state.gold+=10;
+
+  if(state.exp>=100){
+   state.exp-=100;
+   state.level++;
+   state.maxHp+=15;
+   state.hp=state.maxHp;
+   hint("等级提升！当前等级："+state.level);
+  }else{
+   hint("击败星蚀史莱姆！获得经验与星币。");
+  }
+
+  if(state.questStep===2&&state.defeated>=2){
+   state.questStep=3;
+   hint("任务更新：返回村庄寻找艾琳。");
+  }
+
+  updateQuest();
+  updateHUD();
+ }
+}
+
+function attack(){
+ if(!state.started||state.dialog||state.paused||state.attackCD>0)return;
+
+ state.attackCD=.45;
+ sword.rotation.z=-1.1;
+ setTimeout(()=>sword.rotation.z=-.25,180);
+
+ const enemy=nearestEnemy();
+ if(enemy)damageEnemy(enemy,1+state.level);
+ else hint("挥剑未命中目标。");
+}
+
+function skill(){
+ if(!state.started||state.dialog||state.paused||state.skillCD>0)return;
+ if(state.mana<30){hint("星能不足！");return;}
+
+ state.mana-=30;
+ state.skillCD=4;
+
+ const effect=mesh(
+  new THREE.TorusGeometry(1.3,.12,8,32),
+  new THREE.MeshBasicMaterial({
+   color:0x55dcff,transparent:true,opacity:.95
+  }),
+  player.position.x,.8,player.position.z
+ );
+ effect.rotation.x=Math.PI/2;
+
+ let life=0;
+ function animateEffect(){
+  life+=.05;
+  effect.scale.setScalar(1+life*2);
+  effect.material.opacity=Math.max(0,1-life);
+  if(life<1)requestAnimationFrame(animateEffect);
+  else{scene.remove(effect);effect.geometry.dispose();effect.material.dispose();}
+ }
+ animateEffect();
+
+ let hits=0;
+ for(const e of [...enemies]){
+  if(!e.userData.alive)continue;
+  if(player.position.distanceTo(e.position)<7){
+   damageEnemy(e,3+state.level);
+   hits++;
+  }
+ }
+
+ hint(hits?"星火爆发！命中"+hits+"只怪物。":"星火爆发！");
+ updateHUD();
+}
+
+function jump(){
+ if(!state.started||state.dialog||state.paused||!state.onGround)return;
+ state.jumpVelocity=8.5;
+ state.onGround=false;
+}
+
+/* =================================================
+   10. 键盘输入与移动
+================================================= */
+
+window.addEventListener("keydown",e=>{
+ keys[e.code]=true;
+
+ if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)){
+  e.preventDefault();
+ }
+
+ if(e.repeat)return;
+
+ if(e.code==="KeyE")interact();
+ if(e.code==="KeyF")attack();
+ if(e.code==="KeyQ")skill();
+ if(e.code==="Space")jump();
+ if(e.code==="Escape"&&state.started&&!state.dialog)toggleMenu();
+ if(e.code==="KeyI"&&state.started)openInventory();
+});
+
+window.addEventListener("keyup",e=>{
+ keys[e.code]=false;
+});
+
+function movePlayer(dt){
+ if(!state.started||state.paused||state.dialog)return;
+
+ const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+ const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+ const dir=new THREE.Vector3();
+
+ if(keys.KeyW||keys.ArrowUp)dir.add(forward);
+ if(keys.KeyS||keys.ArrowDown)dir.sub(forward);
+ if(keys.KeyD||keys.ArrowRight)dir.add(right);
+ if(keys.KeyA||keys.ArrowLeft)dir.sub(right);
+
+ state.moving=dir.lengthSq()>0;
+ state.sprint=!!(keys.ShiftLeft||keys.ShiftRight);
+
+ if(state.moving){
+  dir.normalize();
+  player.position.addScaledVector(dir,(state.sprint?10:5.5)*dt);
+  player.rotation.y=THREE.MathUtils.lerp(
+   player.rotation.y,
+   Math.atan2(dir.x,dir.z),
+   Math.min(1,dt*12)
+  );
+ }
+
+ player.position.x=THREE.MathUtils.clamp(player.position.x,-78,78);
+ player.position.z=THREE.MathUtils.clamp(player.position.z,-78,78);
+
+ if(!state.onGround){
+  state.jumpVelocity-=20*dt;
+  player.position.y+=state.jumpVelocity*dt;
+  if(player.position.y<=0){
+   player.position.y=0;
+   state.jumpVelocity=0;
+   state.onGround=true;
+  }
+ }
+
+ const body=player.children[0];
+ if(body&&state.moving&&state.onGround){
+  body.scale.y=1+Math.sin(performance.now()*.015)*.05;
+ }else if(body){
+  body.scale.y=1;
+ }
+}
+
+/* =================================================
+   11. 镜头
+================================================= */
+
+renderer.domElement.addEventListener("contextmenu",e=>e.preventDefault());
+renderer.domElement.addEventListener("mousedown",e=>{
+ if(e.button===2)rightMouse=true;
+});
+window.addEventListener("mouseup",e=>{
+ if(e.button===2)rightMouse=false;
+});
+window.addEventListener("mousemove",e=>{
+ if(!rightMouse||!state.started||state.paused)return;
+ yaw-=e.movementX*.004;
+ pitch-=e.movementY*.003;
+ pitch=THREE.MathUtils.clamp(pitch,-.15,.8);
+});
+
+function updateCamera(dt){
+ const distance=8;
+ const height=3.2+pitch*3;
+ const desired=new THREE.Vector3(
+  player.position.x+Math.sin(yaw)*distance,
+  player.position.y+height,
+  player.position.z+Math.cos(yaw)*distance
+ );
+ camera.position.lerp(desired,Math.min(1,dt*7));
+ camera.lookAt(player.position.x,player.position.y+1.5,player.position.z);
+}
+
+/* =================================================
+   12. 怪物AI
+================================================= */
+
+function updateEnemies(dt){
+ if(!state.started||state.paused)return;
+
+ for(const e of enemies){
+  if(!e.userData.alive)continue;
+
+  const distance=e.position.distanceTo(player.position);
+
+  if(distance<16&&distance>1.5){
+   const dir=player.position.clone().sub(e.position);
+   dir.y=0;
+   dir.normalize();
+   e.position.addScaledVector(dir,2.2*dt);
+   e.rotation.y=Math.atan2(dir.x,dir.z);
+  }
+
+  e.position.y=Math.abs(Math.sin(performance.now()*.003+e.position.x))*.25;
+
+  e.userData.cooldown-=dt;
+
+  if(distance<1.8&&e.userData.cooldown<=0){
+   e.userData.cooldown=1.5;
+   state.hp-=8;
+   hint("受到星蚀史莱姆攻击！");
+   if(state.hp<=0)gameOver();
+   updateHUD();
+  }
+ }
+}
+
+function gameOver(){
+ state.hp=0;
+ state.started=false;
+
+ dialog("冒险结束","你被星蚀力量击倒了。重新开始后可以继续冒险。",()=>{
+  state.hp=state.maxHp;
+  state.mana=state.maxMana;
+  player.position.set(0,0,8);
+  state.started=true;
+  updateHUD();
+ });
+}
+
+/* =================================================
+   13. 怪物血条
+================================================= */
+
+function updateEnemyBar(){
+ let target=null,dist=9;
+
+ for(const e of enemies){
+  if(!e.userData.alive)continue;
+  const d=e.position.distanceTo(player.position);
+  if(d<dist){dist=d;target=e;}
+ }
+
+ if(!target){
+  $("enemybar").style.display="none";
+  return;
+ }
+
+ $("enemybar").style.display="block";
+ $("enemyname").textContent=target.userData.name+" Lv."+target.userData.level;
+ $("enemyfill").style.width=
+  Math.max(0,target.userData.hp/target.userData.maxHp*100)+"%";
+}
+
+/* =================================================
+   14. 小地图
+================================================= */
+
+const map=$("minimap");
+const ctx=map.getContext("2d");
+
+function mapPoint(x,z,color,r){
+ const px=150+x*1.35;
+ const py=150+z*1.35;
+ ctx.beginPath();
+ ctx.arc(px,py,r,0,Math.PI*2);
+ ctx.fillStyle=color;
+ ctx.fill();
+}
+
+function drawMap(){
+ ctx.clearRect(0,0,300,300);
+ ctx.fillStyle="#0b1b32";
+ ctx.fillRect(0,0,300,300);
+
+ ctx.strokeStyle="rgba(110,190,230,.15)";
+ for(let i=0;i<=300;i+=30){
+  ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,300);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(300,i);ctx.stroke();
+ }
+
+ ctx.strokeStyle="#368ebc";
+ ctx.lineWidth=14;
+ ctx.beginPath();ctx.moveTo(175,75);ctx.lineTo(175,225);ctx.stroke();
+
+ mapPoint(-5,4,"#ff8bd0",7);
+ mapPoint(0,-37,"#f4d477",7);
+
+ for(const c of chests)if(!c.userData.opened)mapPoint(c.position.x,c.position.z,"#ffd45d",5);
+ for(const e of enemies)if(e.userData.alive)mapPoint(e.position.x,e.position.z,"#ef5e78",5);
+
+ mapPoint(player.position.x,player.position.z,"#54e5ff",8);
+}
+
+/* =================================================
+   15. 区域识别
+================================================= */
+
+function updateArea(){
+ const x=player.position.x,z=player.position.z;
+ let area="星落平原";
+
+ if(z<-27&&Math.abs(x)<18)area="远古遗迹";
+ else if(x<-10&&z>-15&&z<20)area="星落村庄";
+ else if(Math.abs(x-18)<12&&z<15)area="星河浅湾";
+ else if(z>35)area="南部草原";
+ else if(x>30)area="东境荒野";
+
+ $("area").textContent=area;
+}
+
+/* =================================================
+   16. 昼夜变化
+================================================= */
+
+function updateDayNight(dt){
+ worldTime=(worldTime+.018*dt)%24;
+
+ const daylight=Math.max(.12,Math.sin((worldTime-6)/12*Math.PI));
+ sun.intensity=.35+daylight*2.8;
+
+ const color=new THREE.Color();
+
+ if(worldTime>=6&&worldTime<17)color.set(0x9bc9ed);
+ else if(worldTime>=17&&worldTime<20)color.set(0xe78e82);
+ else if(worldTime>=5&&worldTime<6)color.set(0xffb58d);
+ else color.set(0x101c3d);
+
+ scene.background.copy(color);
+ scene.fog.color.copy(color);
+}
+
+/* =================================================
+   17. 星光粒子
+================================================= */
+
+const particles=[];
+
+for(let i=0;i<65;i++){
+ const p=mesh(
+  new THREE.SphereGeometry(.05+Math.random()*.04,6,6),
+  new THREE.MeshBasicMaterial({color:0x7ee7ff,transparent:true,opacity:.8}),
+  (Math.random()-.5)*18,
+  .5+Math.random()*5,
+  -37+(Math.random()-.5)*18
+ );
+ p.userData.phase=Math.random()*6;
+ particles.push(p);
+}
+
+function updateParticles(dt,time){
+ for(const p of particles){
+  p.position.y+=Math.sin(time*1.5+p.userData.phase)*dt*.3;
+  p.material.opacity=.3+Math.abs(Math.sin(time*2+p.userData.phase))*.6;
+ }
+}
+
+/* =================================================
+   18. 背包与角色属性
+================================================= */
+
+function openPanel(title,content){
+ $("paneltitle").textContent=title;
+ $("panelcontent").replaceChildren();
+ $("panelcontent").appendChild(content);
+ $("panel").classList.remove("hidden");
+ state.paused=true;
+}
+
+function openInventory(){
+ const content=document.createElement("div");
+
+ for(const item of inventory){
+  const row=document.createElement("div");
+  row.className="item";
+
+  const info=document.createElement("div");
+  info.innerHTML="<b></b><small></small>";
+  info.querySelector("b").textContent=item.name+" × "+item.count;
+  info.querySelector("small").textContent=item.desc;
+  row.appendChild(info);
+
+  if(item.id==="potion"){
+   const btn=document.createElement("button");
+   btn.className="secondary-btn";
+   btn.textContent="使用";
+   btn.disabled=item.count<=0;
+   btn.onclick=()=>{
+    if(item.count<=0)return;
+    if(state.hp>=state.maxHp){hint("生命值已经满了。");return;}
+    item.count--;
+    state.hp=Math.min(state.maxHp,state.hp+30);
+    updateHUD();
+    openInventory();
+    hint("恢复30点生命值。");
+   };
+   row.appendChild(btn);
+  }
+  content.appendChild(row);
+ }
+
+ openPanel("冒险者背包",content);
+}
+
+function openCharacter(){
+ const content=document.createElement("div");
+ const rows=[
+  ["角色等级","Lv."+state.level],
+  ["生命值",state.hp+"/"+state.maxHp],
+  ["星能值",state.mana+"/"+state.maxMana],
+  ["攻击力",10+state.level*2],
+  ["防御力",2],
+  ["星币",state.gold],
+  ["击败怪物",state.defeated],
+  ["开启宝箱",state.openedChests]
+ ];
+
+ for(const [a,b] of rows){
+  const row=document.createElement("div");
+  row.className="item";
+  const left=document.createElement("span");
+  left.textContent=a;
+  const right=document.createElement("b");
+  right.textContent=b;
+  row.append(left,right);
+  content.appendChild(row);
+ }
+ openPanel("角色属性",content);
+}
+
+$("bag").onclick=openInventory;
+$("character").onclick=openCharacter;
+$("panelclose").onclick=()=>{
+ $("panel").classList.add("hidden");
+ state.paused=false;
+};
+
+/* =================================================
+   19. 存档与读取
+================================================= */
+
+const SAVE_KEY="KMD_STAR_REALM_COMPLETE_V1";
+
+function saveGame(){
+ const data={
+  player:{
+   x:player.position.x,
+   y:player.position.y,
+   z:player.position.z,
+   rotation:player.rotation.y
+  },
+  state:{
+   hp:state.hp,maxHp:state.maxHp,
+   mana:state.mana,maxMana:state.maxMana,
+   level:state.level,exp:state.exp,gold:state.gold,
+   defeated:state.defeated,openedChests:state.openedChests,
+   questStep:state.questStep,questCompleted:state.questCompleted
+  },
+  inventory,
+  chests:chests.map(c=>c.userData.opened),
+  enemies:enemies.map(e=>e.userData.alive),
+  worldTime
+ };
+
+ try{
+  localStorage.setItem(SAVE_KEY,JSON.stringify(data));
+  hint("存档成功！");
+ }catch(e){
+  console.error(e);
+  hint("存档失败。");
+ }
+}
+
+function loadGame(){
+ try{
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw){hint("没有找到存档。");return false;}
+
+  const d=JSON.parse(raw);
+  if(!d.player||!d.state)throw new Error("存档格式错误");
+
+  player.position.set(d.player.x,d.player.y,d.player.z);
+  player.rotation.y=d.player.rotation||0;
+
+  Object.assign(state,d.state);
+
+  if(Array.isArray(d.inventory)){
+   inventory.splice(0,inventory.length,...d.inventory);
+  }
+
+  if(Array.isArray(d.chests)){
+   d.chests.forEach((opened,i)=>{
+    if(opened&&chests[i]){
+     chests[i].userData.opened=true;
+     chests[i].visible=false;
+    }
+   });
+  }
+
+  if(Array.isArray(d.enemies)){
+   d.enemies.forEach((alive,i)=>{
+    if(!alive&&enemies[i]){
+     enemies[i].userData.alive=false;
+     scene.remove(enemies[i]);
+    }
+   });
+  }
+
+  if(Number.isFinite(d.worldTime))worldTime=d.worldTime;
+
+  updateHUD();
+  updateQuest();
+  hint("读取存档成功！");
+  return true;
+ }catch(e){
+  console.error(e);
+  hint("存档损坏或无法读取。");
+  return false;
+ }
+}
+
+$("save").onclick=saveGame;
+$("load").onclick=loadGame;
+$("continuebutton").onclick=()=>{
+ if(loadGame()){
+  $("start").classList.add("hidden");
+  state.started=true;
+ }
+};
+
+/* =================================================
+   20. 菜单
+================================================= */
+
+function toggleMenu(){
+ state.paused=!state.paused;
+ $("menu").classList.toggle("hidden",!state.paused);
+}
+
+$("resume").onclick=()=>{
+ state.paused=false;
+ $("menu").classList.add("hidden");
+};
+
+$("returntitle").onclick=()=>{
+ state.started=false;
+ state.paused=false;
+ $("menu").classList.add("hidden");
+ $("start").classList.remove("hidden");
+};
+
+/* =================================================
+   21. 移动端触控
+================================================= */
+
+document.querySelectorAll("#mobilepad [data-key]").forEach(btn=>{
+ const key=btn.dataset.key;
+
+ btn.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  keys[key]=true;
+  btn.setPointerCapture(e.pointerId);
+ });
+
+ const release=e=>{
+  e.preventDefault();
+  keys[key]=false;
+ };
+
+ btn.addEventListener("pointerup",release);
+ btn.addEventListener("pointercancel",release);
+ btn.addEventListener("lostpointercapture",()=>keys[key]=false);
+});
+
+$("attack").onclick=attack;
+$("skill").onclick=skill;
+$("jump").onclick=jump;
+$("interact").onclick=interact;
+
+/* 右侧触摸屏幕控制镜头 */
+let lookTouch=null,lastX=0,lastY=0;
+
+renderer.domElement.addEventListener("touchstart",e=>{
+ if(!state.started||e.touches.length!==1)return;
+ const t=e.touches[0];
+ if(t.clientX<innerWidth*.42)return;
+ lookTouch=t.identifier;
+ lastX=t.clientX;lastY=t.clientY;
+},{passive:true});
+
+renderer.domElement.addEventListener("touchmove",e=>{
+ if(lookTouch===null)return;
+ for(const t of e.changedTouches){
+  if(t.identifier!==lookTouch)continue;
+  yaw-=(t.clientX-lastX)*.006;
+  pitch-=(t.clientY-lastY)*.004;
+  pitch=THREE.MathUtils.clamp(pitch,-.15,.8);
+  lastX=t.clientX;lastY=t.clientY;
+ }
+},{passive:true});
+
+renderer.domElement.addEventListener("touchend",e=>{
+ for(const t of e.changedTouches){
+  if(t.identifier===lookTouch)lookTouch=null;
+ }
+});
+
+/* =================================================
+   22. 启动
+================================================= */
+
+$("startbutton").onclick=()=>{
+ state.started=true;
+ state.paused=false;
+ $("start").classList.add("hidden");
+ hint("欢迎来到星落平原！寻找艾琳开始你的冒险。");
+};
+
+updateHUD();
+updateQuest();
+
+/* =================================================
+   23. 游戏主循环
+================================================= */
+
+const clock=new THREE.Clock();
+
+function animate(){
+ requestAnimationFrame(animate);
+
+ const dt=Math.min(clock.getDelta(),.05);
+ const time=clock.elapsedTime;
+
+ if(state.started&&!state.paused&&!state.dialog){
+  movePlayer(dt);
+  updateCamera(dt);
+  updateEnemies(dt);
+  updateDayNight(dt);
+  updateParticles(dt,time);
+
+  state.attackCD=Math.max(0,state.attackCD-dt);
+  state.skillCD=Math.max(0,state.skillCD-dt);
+  state.mana=Math.min(state.maxMana,state.mana+4*dt);
+
+  rune.rotation.y+=dt;
+  rune.position.y=2.8+Math.sin(time*2)*.18;
+  npcMarker.position.y=3.4+Math.sin(time*2.5)*.2;
+  npcMarker.rotation.y+=dt;
+
+  updateEnemyBar();
+  updateArea();
+
+  const target=nearestInteractable();
+  if(target){
+   if(target===npc)hintInteraction("按 E 与艾琳交谈");
+   else if(target===monument)hintInteraction("按 E 调查星之石碑");
+   else hintInteraction("按 E 打开宝箱");
+  }else{
+   $("hint").classList.add("hidden");
+  }
+ }
+
+ drawMap();
+ renderer.render(scene,camera);
+}
+
+function hintInteraction(text){
+ if($("hint").textContent!==text){
+  $("hint").textContent=text;
+  $("hint").classList.remove("hidden");
+ }
+}
+
+animate();
+
+/* =================================================
+   24. 窗口适配
+================================================= */
+
+window.addEventListener("resize",()=>{
+ camera.aspect=innerWidth/innerHeight;
+ camera.updateProjectionMatrix();
+ renderer.setSize(innerWidth,innerHeight);
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+});
+
+console.log("KMD 星穹纪元：失落的七界 已初始化");
+</script>
+</body>
+</html>
